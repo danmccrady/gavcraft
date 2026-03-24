@@ -399,6 +399,21 @@
 </head>
 <body>
 
+  <!-- In-app browser warning -->
+  <div id="browser-warning" style="display:none; position:fixed; inset:0; background:#000; z-index:9999;
+       flex-direction:column; align-items:center; justify-content:center; color:white; padding:32px; text-align:center;">
+    <div style="font-size:48px; margin-bottom:16px;">🎮</div>
+    <h2 style="font-size:24px; color:#88dd44; margin-bottom:12px; letter-spacing:2px;">GAVCRAFT</h2>
+    <p style="font-size:16px; color:#aad; margin-bottom:24px;">
+      This game needs a real browser to run.<br>Open it in Safari or Chrome for the full experience.
+    </p>
+    <p style="font-size:13px; color:#668; margin-bottom:20px;">
+      Tap the <strong style="color:#adf">⋯</strong> or <strong style="color:#adf">share</strong> button,<br>
+      then choose <strong style="color:#adf">"Open in Browser"</strong>
+    </p>
+    <p id="browser-warning-url" style="font-size:12px; color:#446; word-break:break-all;"></p>
+  </div>
+
   <!-- Start screen -->
   <div id="start-screen">
     <h1>GAVCRAFT</h1>
@@ -462,6 +477,16 @@
     </div>
   </div>
 
+  <script>
+    // Detect in-app browsers (LinkedIn, Instagram, Facebook, etc.)
+    const ua = navigator.userAgent || '';
+    const isInApp = /LinkedIn|FBAN|FBAV|Instagram|Twitter|Line\/|MicroMessenger|GSA\//.test(ua);
+    if (isInApp) {
+      const w = document.getElementById('browser-warning');
+      w.style.display = 'flex';
+      document.getElementById('browser-warning-url').textContent = window.location.href;
+    }
+  </script>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

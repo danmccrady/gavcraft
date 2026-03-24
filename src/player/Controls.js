@@ -52,13 +52,21 @@ export class Controls {
   }
 
   _bindMouse() {
-    // Request pointer lock on canvas click
+    // On touch-only devices pointer lock isn't needed — treat as always locked
+    this._touchOnly = ('ontouchstart' in window) && !window.matchMedia('(pointer: fine)').matches;
+    if (this._touchOnly) {
+      this.isLocked = true;
+    }
+
+    // Request pointer lock on canvas click (desktop)
     this.domElement.addEventListener('click', () => {
-      if (!this.isLocked) this.domElement.requestPointerLock();
+      if (!this.isLocked && !this._touchOnly) this.domElement.requestPointerLock();
     });
 
     document.addEventListener('pointerlockchange', () => {
-      this.isLocked = document.pointerLockElement === this.domElement;
+      if (!this._touchOnly) {
+        this.isLocked = document.pointerLockElement === this.domElement;
+      }
     });
 
     document.addEventListener('mousemove', (e) => {
