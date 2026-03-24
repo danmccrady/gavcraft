@@ -52,20 +52,10 @@ export class Controls {
   }
 
   _bindMouse() {
-    // On touch-only devices pointer lock isn't needed — treat as always locked
-    this._touchOnly = ('ontouchstart' in window) && !window.matchMedia('(pointer: fine)').matches;
-    if (this._touchOnly) {
-      this.isLocked = true;
-    }
-
-    // Request pointer lock on canvas click (desktop)
+    // Request pointer lock on canvas click — desktop only, purely for cursor capture
     this.domElement.addEventListener('click', () => {
-      if (!this.isLocked && !this._touchOnly) this.domElement.requestPointerLock();
-    });
-
-    document.addEventListener('pointerlockchange', () => {
-      if (!this._touchOnly) {
-        this.isLocked = document.pointerLockElement === this.domElement;
+      if (document.pointerLockElement !== this.domElement) {
+        this.domElement.requestPointerLock?.();
       }
     });
 
@@ -74,6 +64,11 @@ export class Controls {
       this.mouseDeltaX += e.movementX;
       this.mouseDeltaY += e.movementY;
     });
+  }
+
+  // Called by main.js when the game starts — unlocks input for all device types
+  unlock() {
+    this.isLocked = true;
   }
 
   _bindTouch() {

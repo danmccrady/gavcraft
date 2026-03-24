@@ -110,10 +110,10 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// Re-lock pointer after inventory closes
+// Re-lock pointer after inventory closes (desktop — recaptures cursor)
 renderer.domElement.addEventListener('click', () => {
-  if (!hud.isOpen && !controls.isLocked) {
-    renderer.domElement.requestPointerLock();
+  if (!hud.isOpen && document.pointerLockElement !== renderer.domElement) {
+    renderer.domElement.requestPointerLock?.();
   }
 });
 
@@ -136,7 +136,8 @@ document.getElementById('play-btn').addEventListener('click', () => {
   document.getElementById('hotbar').style.display          = 'flex';
   document.getElementById('hud').style.display             = 'block';
   document.getElementById('survival-hud').style.display    = 'flex';
-  renderer.domElement.requestPointerLock();
+  controls.unlock(); // allow input on all browsers, including in-app WebViews
+  renderer.domElement.requestPointerLock?.(); // desktop: capture cursor (optional)
   started = true;
 });
 
