@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { Chunk, CHUNK_SIZE, CHUNK_HEIGHT } from './Chunk.js';
 import { BLOCK } from '../blocks/blocks.js';
 
-const RENDER_DISTANCE  = 6;  // chunks in each direction
-const WORLD_LIMIT      = 13; // max chunks from origin (≈ 208 blocks)
+const RENDER_DISTANCE  = 4;  // chunks in each direction (4 = 9×9 = 81 chunks max)
+const WORLD_LIMIT      = 8;  // max chunks from origin (≈ 128 blocks, 256×256 world)
 const GEN_PER_FRAME    = 2;  // how many chunk data generations per frame
 const BUILD_PER_FRAME  = 2;  // how many mesh builds per frame
 

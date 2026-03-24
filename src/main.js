@@ -25,7 +25,7 @@ window.addEventListener('resize', () => {
 
 // ── Scene ─────────────────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x5599dd, 90, 160);
+scene.fog = new THREE.Fog(0x5599dd, 40, 70);
 
 // ── Lighting ──────────────────────────────────────────────────────────────────
 const ambientLight = new THREE.AmbientLight(0x88aabb, 0.7);
@@ -155,7 +155,7 @@ function animate() {
     player.update(dt, controls, world);
 
     // Soft world border — clamp player to the generated area
-    const WORLD_EDGE = 200;
+    const WORLD_EDGE = 120;
     player.pos.x = Math.max(-WORLD_EDGE, Math.min(WORLD_EDGE, player.pos.x));
     player.pos.z = Math.max(-WORLD_EDGE, Math.min(WORLD_EDGE, player.pos.z));
 
