@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GavCraft</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; font-family: monospace; }
+    canvas { display: block; }
+
+    /* ── Crosshair ─────────────────────────────────────────────────── */
+    #crosshair {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 24px;
+      pointer-events: none;
+      text-shadow: 1px 1px 2px black;
+      user-select: none;
+    }
+
+    /* ── Coords HUD ────────────────────────────────────────────────── */
+    #hud {
+      position: fixed;
+      top: 12px; left: 12px;
+      color: #adf;
+      font-size: 13px;
+      pointer-events: none;
+      text-shadow: 1px 1px 2px black;
+    }
+
+    /* ── Selected block name ───────────────────────────────────────── */
+    #selected-block-name {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 14px;
+      pointer-events: none;
+      text-shadow: 1px 1px 3px black;
+      letter-spacing: 1px;
+    }
+
+    /* ── Hotbar ────────────────────────────────────────────────────── */
+    #hotbar {
+      display: none; /* shown after game starts */
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      flex-direction: row;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .hb-slot {
+      width: 54px; height: 54px;
+      background: rgba(0, 0, 20, 0.75);
+      border: 2px solid rgba(150, 150, 200, 0.4);
+      border-radius: 6px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hb-slot.selected {
+      border-color: #22ddff;
+      box-shadow: 0 0 8px #22ddff88;
+    }
+
+    .hb-preview {
+      width: 36px; height: 36px;
+      border-radius: 4px;
+    }
+
+    .hb-count {
+      position: absolute;
+      bottom: 3px; right: 5px;
+      font-size: 11px;
+      color: white;
+      text-shadow: 1px 1px 1px black;
+    }
+
+    .hb-num {
+      position: absolute;
+      top: 2px; left: 5px;
+      font-size: 10px;
+      color: rgba(200,200,255,0.5);
+    }
+
+    /* ── Inventory + Crafting overlay ──────────────────────────────── */
+    #inventory-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 10, 0.88);
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      padding: 20px;
+    }
+
+    .inv-panel {
+      background: rgba(10, 5, 30, 0.95);
+      border: 1px solid rgba(100, 100, 200, 0.3);
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .inv-panel h3 {
+      color: #adf;
+      font-size: 14px;
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    /* inventory grid — 9 cols */
+    #inv-grid {
+      display: grid;
+      grid-template-columns: repeat(9, 48px);
+      gap: 4px;
+    }
+
+    .inv-slot {
+      width: 48px; height: 48px;
+      background: rgba(0, 0, 20, 0.6);
+      border: 1px solid rgba(120, 120, 180, 0.3);
+      border-radius: 4px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .inv-slot.hotbar-row {
+      border-color: rgba(100, 180, 255, 0.4);
+    }
+
+    .inv-slot.selected {
+      border-color: #22ddff;
+      box-shadow: 0 0 6px #22ddff66;
+    }
+
+    .inv-preview {
+      width: 32px; height: 32px;
+      border-radius: 3px;
+    }
+
+    .inv-count {
+      position: absolute;
+      bottom: 2px; right: 4px;
+      font-size: 10px;
+      color: white;
+      text-shadow: 1px 1px 1px black;
+    }
+
+    /* ── Recipe panel ──────────────────────────────────────────────── */
+    #recipe-panel {
+      max-width: 380px;
+    }
+
+    #recipe-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 70vh;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .recipe-row {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(100,100,180,0.3);
+      border-radius: 6px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .recipe-ingredients {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .recipe-chip {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #000;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .recipe-chip span { pointer-events: none; }
+
+    .recipe-arrow {
+      color: #adf;
+      font-size: 18px;
+    }
+
+    .recipe-output {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #000;
+      font-weight: bold;
+    }
+
+    .recipe-output span { pointer-events: none; }
+
+    .craft-btn {
+      padding: 5px 12px;
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: bold;
+      background: #22ddff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #000;
+      transition: opacity 0.2s, background 0.2s;
+      margin-left: auto;
+    }
+
+    .craft-btn:hover:not(:disabled) { background: #66eeff; }
+    .craft-btn:disabled { cursor: not-allowed; }
+
+    .recipe-desc {
+      width: 100%;
+      font-size: 11px;
+      color: rgba(150, 180, 220, 0.7);
+      margin-top: 2px;
+    }
+
+    /* ── Press E hint inside inventory ────────────────────────────── */
+    #inv-close-hint {
+      color: rgba(150,180,220,0.6);
+      font-size: 12px;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    /* ── Start screen ──────────────────────────────────────────────── */
+    #start-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.90);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    #start-screen h1 {
+      font-size: 52px;
+      margin-bottom: 8px;
+      color: #88dd44;
+      letter-spacing: 4px;
+      text-shadow: 0 0 30px #88dd4488;
+    }
+
+    #start-screen .subtitle {
+      font-size: 16px;
+      color: #7abcdf;
+      margin-bottom: 28px;
+    }
+
+    #start-screen .controls-hint {
+      font-size: 13px;
+      color: #6688aa;
+      margin-bottom: 6px;
+    }
+
+    #start-screen button {
+      margin-top: 28px;
+      padding: 14px 40px;
+      font-size: 22px;
+      font-family: monospace;
+      font-weight: bold;
+      background: #88dd44;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #000;
+      letter-spacing: 2px;
+      box-shadow: 0 0 20px #88dd4466;
+    }
+
+    #start-screen button:hover { background: #aaf055; }
+
+    /* ── Survival HUD (hearts + hunger) ───────────────────────────── */
+    #survival-hud {
+      display: none;
+      position: fixed;
+      bottom: 88px;
+      left: 50%;
+      transform: translateX(-50%);
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      pointer-events: none;
+    }
+
+    .heart, .hunger-icon {
+      font-size: 18px;
+      transition: color 0.2s;
+    }
+    .heart.full  { color: #ff3344; text-shadow: 0 0 6px #ff334488; }
+    .heart.empty { color: #333; }
+    .hunger-icon.full  { color: #ffaa22; text-shadow: 0 0 6px #ffaa2288; }
+    .hunger-icon.empty { color: #333; }
+
+    #health-hearts, #hunger-icons {
+      display: flex;
+      gap: 3px;
+    }
+
+    /* ── Day label (top right) ─────────────────────────────────────── */
+    #day-label {
+      position: fixed;
+      top: 12px; right: 14px;
+      font-size: 13px;
+      pointer-events: none;
+      text-shadow: 1px 1px 2px black;
+    }
+
+    /* ── Fly mode label ────────────────────────────────────────────── */
+    #fly-label {
+      display: none;
+      position: fixed;
+      top: 12px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,180,255,0.25);
+      border: 1px solid rgba(0,180,255,0.6);
+      color: #44ddff;
+      font-size: 13px;
+      padding: 3px 12px;
+      border-radius: 4px;
+      pointer-events: none;
+      letter-spacing: 1px;
+    }
+
+    /* ── Red damage flash overlay ──────────────────────────────────── */
+    #damage-overlay {
+      position: fixed;
+      inset: 0;
+      background: #ff0000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.1s;
+    }
+
+    /* ── Death screen ──────────────────────────────────────────────── */
+    #death-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(80, 0, 0, 0.88);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    #death-screen h2 {
+      font-size: 52px;
+      color: #ff3344;
+      letter-spacing: 4px;
+      text-shadow: 0 0 30px #ff334466;
+      margin-bottom: 16px;
+    }
+
+    #death-screen p { font-size: 16px; color: #ffaaaa; margin-bottom: 24px; }
+
+    #respawn-btn {
+      padding: 12px 36px;
+      font-size: 20px;
+      font-family: monospace;
+      font-weight: bold;
+      background: #ff3344;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
+      letter-spacing: 2px;
+    }
+    #respawn-btn:hover { background: #ff5566; }
+  </style>
+</head>
+<body>
+
+  <!-- Start screen -->
+  <div id="start-screen">
+    <h1>GAVCRAFT</h1>
+    <p class="subtitle">Mine, build, explore</p>
+    <p class="controls-hint">WASD — move &nbsp;|&nbsp; Mouse — look &nbsp;|&nbsp; Space — jump</p>
+    <p class="controls-hint">Left click — break &nbsp;|&nbsp; Right click — place &nbsp;|&nbsp; 1-9 — select block</p>
+    <p class="controls-hint">E — inventory &amp; crafting &nbsp;|&nbsp; F — eat food &nbsp;|&nbsp; G — fly mode</p>
+    <p class="controls-hint">Fly: Space = up &nbsp;|&nbsp; Shift = down</p>
+    <button id="play-btn">PLAY</button>
+  </div>
+
+  <!-- Crosshair -->
+  <div id="crosshair" style="display:none">+</div>
+
+  <!-- Coords (top left) -->
+  <div id="hud" style="display:none">
+    <div id="coords"></div>
+  </div>
+
+  <!-- Day/night clock (top right) -->
+  <div id="day-label"></div>
+
+  <!-- Fly mode indicator (top centre) -->
+  <div id="fly-label">✦ FLY MODE — G to exit</div>
+
+  <!-- Red flash on damage -->
+  <div id="damage-overlay"></div>
+
+  <!-- Death screen -->
+  <div id="death-screen">
+    <h2>YOU DIED</h2>
+    <p>The alien moon claimed another explorer...</p>
+    <button id="respawn-btn">RESPAWN</button>
+  </div>
+
+  <!-- Survival HUD: hearts + hunger -->
+  <div id="survival-hud">
+    <div id="health-hearts"></div>
+    <div id="hunger-icons"></div>
+  </div>
+
+  <!-- Selected block name (above hotbar) -->
+  <div id="selected-block-name"></div>
+
+  <!-- Hotbar -->
+  <div id="hotbar"></div>
+
+  <!-- Inventory + Crafting screen -->
+  <div id="inventory-screen">
+    <!-- Left: inventory grid -->
+    <div class="inv-panel">
+      <h3>Inventory</h3>
+      <div id="inv-grid"></div>
+      <p id="inv-close-hint">Press E to close</p>
+    </div>
+
+    <!-- Right: crafting recipes -->
+    <div class="inv-panel" id="recipe-panel">
+      <h3>Crafting</h3>
+      <div id="recipe-list"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
