@@ -23,7 +23,7 @@ export class Player {
     this.onGround = false;
 
     // Look angles
-    this.yaw   = 0;  // horizontal (Y axis rotation)
+    this.yaw   = Math.PI;  // horizontal (Y axis rotation) — face +Z on spawn
     this.pitch = 0;  // vertical   (X axis rotation)
 
     this._raycaster = new THREE.Raycaster();
