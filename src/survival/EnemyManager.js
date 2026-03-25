@@ -12,11 +12,12 @@ export class EnemyManager {
   constructor(scene) {
     this.scene    = scene;
     this.enemies  = [];
-    this._spawnTimer = SPAWN_INTERVAL; // spawn first enemy quickly
+    this._spawnTimer = SPAWN_INTERVAL;
+    this._growlTimer = 4; // seconds until next growl
   }
 
   // Call every frame
-  update(dt, playerPos, world, health, isNight) {
+  update(dt, playerPos, world, health, isNight, sounds) {
     // Spawn new enemies at night
     if (isNight && this.enemies.length < MAX_ENEMIES) {
       this._spawnTimer -= dt;
@@ -28,6 +29,16 @@ export class EnemyManager {
 
     // Reset spawn timer when it becomes day so first night spawn is quick
     if (!isNight) this._spawnTimer = 3;
+
+    // Growl periodically when any enemy is close to the player
+    if (sounds && this.enemies.length > 0) {
+      this._growlTimer -= dt;
+      if (this._growlTimer <= 0) {
+        this._growlTimer = 3 + Math.random() * 4; // random 3–7 seconds
+        const close = this.enemies.find(e => !e.isDead && e.pos.distanceTo(playerPos) < 20);
+        if (close) sounds.enemyGrowl();
+      }
+    }
 
     // Update all alive enemies
     for (const enemy of this.enemies) {

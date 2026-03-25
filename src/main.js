@@ -9,6 +9,7 @@ import { Health } from './survival/Health.js';
 import { EnemyManager } from './survival/EnemyManager.js';
 import { BLOCK, eatValue } from './blocks/blocks.js';
 import { getHeight } from './world/terrain.js';
+import { Sounds } from './audio/Sounds.js';
 
 // ── Renderer ─────────────────────────────────────────────────────────────────
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -53,11 +54,12 @@ const hud          = new HUD(inventory);
 const dayNight     = new DayNight(scene, ambientLight, sunLight, renderer);
 const health       = new Health();
 const enemyManager = new EnemyManager(scene);
+const sounds       = new Sounds();
 
 hud.initSurvival(health);
 
 // ── Spawn position — drop from sky so player can see the world on first load ──
-const SPAWN_X = 21, SPAWN_Z = 28; // spawn south of house so door is straight ahead (-Z)
+const SPAWN_X = 0, SPAWN_Z = 0; // open field, house is visible to the north-east
 const SPAWN_Y = getHeight(SPAWN_X, SPAWN_Z) + 30; // well above terrain, falls naturally
 player.pos.set(SPAWN_X, SPAWN_Y, SPAWN_Z);
 const SPAWN_POS = new THREE.Vector3(SPAWN_X, SPAWN_Y, SPAWN_Z);
@@ -83,9 +85,9 @@ renderer.domElement.addEventListener('mousedown', (e) => {
     // Punch nearby zombie first; otherwise break block
     camera.getWorldDirection(_lookDir);
     const punched = enemyManager.punch(camera.position, _lookDir);
-    if (!punched) player.breakBlock(world, inventory);
+    if (!punched) { player.breakBlock(world, inventory); sounds.breakBlock(); }
   }
-  if (e.button === 2) player.placeBlock(world, inventory);
+  if (e.button === 2) { player.placeBlock(world, inventory); sounds.placeBlock(); }
 });
 
 renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -138,11 +140,14 @@ document.getElementById('play-btn').addEventListener('click', () => {
   document.getElementById('survival-hud').style.display    = 'flex';
   controls.unlock(); // allow input on all browsers, including in-app WebViews
   renderer.domElement.requestPointerLock?.(); // desktop: capture cursor (optional)
+  sounds.init(); // AudioContext must start after a user gesture
   started = true;
 });
 
 // ── Game loop ─────────────────────────────────────────────────────────────────
-let lastTime = performance.now();
+let lastTime    = performance.now();
+let prevHealth  = health.hp;   // track health drops for hurt sound
+let prevOnGround = true;       // track landing for jump sound
 
 function animate() {
   requestAnimationFrame(animate);
@@ -162,7 +167,17 @@ function animate() {
 
     dayNight.update(dt);
     health.update(dt);
-    enemyManager.update(dt, player.pos, world, health, dayNight.isNight());
+    enemyManager.update(dt, player.pos, world, health, dayNight.isNight(), sounds);
+
+    // Jump sound — play when player leaves the ground
+    if (prevOnGround && !player.onGround && player.vel.y > 0) sounds.jump();
+    prevOnGround = player.onGround;
+
+    // Hurt sound — play when health drops
+    if (health.hp < prevHealth) sounds.hurt();
+    prevHealth = health.hp;
+
+    sounds.update(dt, player, world);
 
     const p = player.pos;
     coordsEl.textContent = `X:${p.x.toFixed(1)}  Y:${p.y.toFixed(1)}  Z:${p.z.toFixed(1)}`;
